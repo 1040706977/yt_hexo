@@ -306,8 +306,6 @@ gets()函数只知道数组的开始处，并不知道数组中有多少个元�
 
 好景不长，C11标准委员会采取了更强硬的态度，直接从标准中废除了gets()函数。
 
-### gets()的替代
-
 1. 过去通常用`fgets()`来代替gets()，使用略微复杂
 2. C11标准新增的`gets_s()`函数也可代替gets()，而且可以替换现有代码中的gets()
 
@@ -315,7 +313,7 @@ gets()函数只知道数组的开始处，并不知道数组中有多少个元�
 
 
 
-#### fgets()
+### fgets()
 
 ```C
 int fputs(const char *_Str, _iobuf *_File)
@@ -457,7 +455,7 @@ int main(void) {
 
 
 
-#### gets_s()
+### gets_s()
 
 ```C
 char *gets_s(char *, rsize_t)		// rsize_t表示最多读取的字符数量，一般为数组大小。
@@ -487,3 +485,152 @@ char *gets_s(char *, rsize_t)		// rsize_t表示最多读取的字符数量，一
 例如，如果下一条读取语句要读取的是其他类型的值，就可能导致程序崩溃。
 
 丢弃输入行余下的字符保证了读取语句与键盘输入同步。
+
+
+
+### scanf()
+
+scanf()更像是“获取单词”函数，而不是“获取字符串”函数。
+
+<img src="CPP——11.字符串和字符串函数.assets/image-20230706225901190.png" alt="image-20230706225901190" style="zoom:45%;" />
+
+如果使用%s转换说明，以下一个空白字符（空行、 空格、制表符或换行符）作为字符串的结束（字符串不包括空白字符）。
+
+如果指定了字段宽度，如%10s，那么scanf()将读取10 个字符或读到第1个空白字符停止（先满足的条件即是结束输入的条件）。可以在%s转换说明中使用字段宽度可防止溢出。
+
+scanf()函数可以返回一个整数值，该值等于scanf()成功读取的项数或EOF（读到文件结尾时返回EOF）。
+
+```C
+char name1[11], name2[11];
+int count;
+printf("Please enter 2 names.\n");
+count = scanf("%5s %10s", name1, name2);
+printf("I read the %d names %s and %s.\n", count, name1, name2);
+------------------------------------------------------------------------
+1234 123456789abcdefg
+I read the 2 names 1234 and 123456789a.
+
+123456789 abcdefgh 
+I read the 2 names 12345 and 6789.
+```
+
+根据输入数据的性质，用fgets()读取从键盘输入的数据更合适。例如， scanf()无法完整读取带空格的书名或歌曲名。
+
+scanf()的典型用法是读取并转换混合数据类型为某种标准形式。例如，如果输入行包含一个工具名、库存量和单价。
+
+
+
+
+
+## 字符串输出
+
+### puts()
+
+只需把字符串的地址作为参数传递给它即可：
+
+```C
+int puts(const char *_Str)
+```
+
+puts()在显示字符串时会自动在其末尾添加一个换行符。
+
+该程序示例第5行再次说明，用双引号括起来的内容是字符串常量，且==字符串常量被视为该字符串的地址==。
+
+```C
+#define DEF "I am a #defined string."
+...
+char str1[80] = "An array was initialized to me.";
+const char * str2 = "A pointer was initialized to me.";
+puts("I'm an argument to puts().");		// I'm an argument to puts().
+puts(DEF);				// I am a #defined string.
+puts(str1);				// An array was initialized to me.
+puts(str2);				// A pointer was initialized to me.
+puts(&str1[1]);			// n array was initialized to me.
+puts(str2 + 2);			// pointer was initialized to me.
+```
+
+puts()如何知道在何处停止？该函数在遇到空字符时就停止输出，==所以必须确保有空字符==。
+
+每次运行`puts(noString)`的结果都不一样。因为noString末尾没有空字符不是字符串，所以puts()会一直打印noString后面内存中的内容，直到发现一 个空字符为止。
+
+通常内存中有许多空字符，如果幸运的话，puts()很快就会发现一 个。但是，这样做很不靠谱。
+
+```c
+char noString[] = {'H', 'e', 'l', '!'};
+char isString[] = "hello!";
+puts(noString);		// Hel!瘥讜
+puts(isString);		// hello!
+```
+
+
+
+### fputs()
+
+fputs()函数是puts()针对文件定制的版本，第 2 个参数指明要写入数据的文件。
+
+```C
+int fputs(const char *_Str, _iobuf *_File)
+```
+
+fputs()不会在输出的末尾添加换行符。与puts()不同！
+
+>gets()丢弃输入中的换行符，puts()在输出中添加换行符。
+>
+>fgets()保留输入中的换行符，fputs()不在输出中添加换行符。
+>
+>一般来说成对使用，特殊情况交叉组合使用。
+
+
+
+### printf()
+
+和puts()一样，printf() 也把字符串的地址作为参数。
+
+与puts()不同的是，printf()不会自动在每个字符串末尾加上一个换行符。
+
+printf()的形式更复杂些，需要输入更多代码，而且计算机执行的时间也更长（但是你觉察不到）。
+
+
+
+
+
+## 自定义输入/输出函数
+
+如果无法使用这些函数或者不想用它们，完全可以在getchar()和putchar()的基础上自定义所需的函数。
+
+因为每个字符串都以空字符结尾，所以不用给函数传递字符串的大小。函数依次处理每个字符，直至遇到空字符。
+
+形参之所以用`const char* s`而非const char[]，是因为实际参数不一定是数组，还可能是用双引号括起来的字符串常量，或声明为 char *类型的变量。
+
+```C
+/* put1.c -- 打印字符串，不添加\n */
+void put1(const char* s) {
+    while (*s)				// 当s指向空字符时, *s的值是0，即测试条件为假
+        putchar(*s++);		// ++的优先级高于*, 递增的是s本身而不是*s
+}
+int main (){
+    char str[] = "Hello, World!";
+    put1(str);
+    return 0;
+}
+```
+
+```C
+/* put2.c -- 打印一个字符串，并统计打印的字符数 */
+uint32_t put2(const char* s) {
+    uint32_t cnt = 0;
+    while (*s) {			// 与 *s != '\0' 相同
+        putchar(*s++);
+        cnt++;
+    }
+    putchar('\n');			// 不统计换行符
+    return cnt;
+}
+int main (){
+    char str[] = "Hello, World!";
+    uint32_t cnt = put2(str);
+    printf_s("str has %d characters",cnt);	// str has 13 characters
+    return 0;
+}
+```
+
